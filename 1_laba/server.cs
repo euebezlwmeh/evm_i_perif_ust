@@ -1,47 +1,41 @@
 using System;
-using System.IO;
 using System.IO.Pipes;
+using System.Text;
 
 public struct User
 {
-    public string name;
-    public string hometown;
-};
+    public string Name;
+    public string Hometown;
+}
 
 class PipeServer
 {
     static void Main()
     {
-        using (NamedPipeServerStream pipeServer =
-            new NamedPipeServerStream("testpipe", PipeDirection.Out))
+        using (NamedPipeServerStream pipeServer = new NamedPipeServerStream("testpipe", PipeDirection.InOut, 1))
         {
             Console.WriteLine("NamedPipeServerStream object created.");
             Console.Write("Waiting for client connection...");
             pipeServer.WaitForConnection();
 
             Console.WriteLine("Client connected.");
-            try
-            {
-                User newUser = new User();
 
-                Console.WriteLine("Enter name: ");
-                newUser.name = Console.ReadLine();
+            User newUser = new User();
 
-                Console.WriteLine("Enter hometown: ");
-                newUser.hometown = Console.ReadLine();
+            Console.WriteLine("Enter name: ");
+            newUser.Name = Console.ReadLine();
 
-                string result = string.Format("Name: {0}\nHometown: {1}", newUser.name, newUser.hometown);
+            Console.WriteLine("Enter hometown: ");
+            newUser.Hometown = Console.ReadLine();
+            
 
-                using (StreamWriter sw = new StreamWriter(pipeServer))  // StreamWriter использовать нельзя
-                {
-                    sw.AutoFlush = true;
-                    sw.WriteLine(result);
-                }
-            }
-            catch (IOException e)
-            {
-                Console.WriteLine("ERROR: {0}", e.Message);
-            }
+            byte[] userDataBytes = Encoding.UTF8.GetBytes(newUser.Name + "," + newUser.Hometown);
+            pipeServer.Write(userDataBytes, 0, userDataBytes.Length);
+            pipeServer.Flush();
+
+            Console.WriteLine("User data sent to client:");
+            string result = string.Format("Name: {0}, Hometown: {1}", newUser.Name, newUser.Hometown);
+            Console.WriteLine(result);
         }
     }
 }
