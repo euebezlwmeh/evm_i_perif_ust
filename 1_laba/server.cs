@@ -1,9 +1,12 @@
-// сервер записывает, но не читает
-// структуры, свойства в передаваемых данных
-
 using System;
 using System.IO;
 using System.IO.Pipes;
+
+public struct User
+{
+    public string name;
+    public string hometown;
+};
 
 class PipeServer
 {
@@ -13,24 +16,28 @@ class PipeServer
             new NamedPipeServerStream("testpipe", PipeDirection.Out))
         {
             Console.WriteLine("NamedPipeServerStream object created.");
-
-            // Wait for a client to connect
             Console.Write("Waiting for client connection...");
             pipeServer.WaitForConnection();
 
             Console.WriteLine("Client connected.");
             try
             {
-                // Read user input and send that to the client process.
-                using (StreamWriter sw = new StreamWriter(pipeServer)) // StreamWriter использовать нельзя
+                User newUser = new User();
+
+                Console.WriteLine("Enter name: ");
+                newUser.name = Console.ReadLine();
+
+                Console.WriteLine("Enter hometown: ");
+                newUser.hometown = Console.ReadLine();
+
+                string result = string.Format("Name: {0}\nHometown: {1}", newUser.name, newUser.hometown);
+
+                using (StreamWriter sw = new StreamWriter(pipeServer))  // StreamWriter использовать нельзя
                 {
                     sw.AutoFlush = true;
-                    Console.Write("Enter text: ");
-                    sw.WriteLine(Console.ReadLine());
+                    sw.WriteLine(result);
                 }
             }
-            // Catch the IOException that is raised if the pipe is broken
-            // or disconnected.
             catch (IOException e)
             {
                 Console.WriteLine("ERROR: {0}", e.Message);
