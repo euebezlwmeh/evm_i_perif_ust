@@ -18,7 +18,8 @@ class PipeClient
             pipeClient.Connect();
 
             Console.WriteLine("Connected to pipe.");
-            Console.WriteLine("There are currently {0} pipe server instances open.", pipeClient.NumberOfServerInstances);
+            // строка не работает на линуксе
+            // Console.WriteLine("There are currently {0} pipe server instances open.", pipeClient.NumberOfServerInstances);
 
             byte[] userDataBytes = new byte[1024];
             int bytesRead = pipeClient.Read(userDataBytes, 0, userDataBytes.Length);
