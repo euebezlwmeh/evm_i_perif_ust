@@ -1,43 +1,83 @@
-// пока просто копипаст 1 лабы
-
 using System;
 using System.IO.Pipes;
 using System.Text;
+using System.Collections.Generic;
 
-public struct User
+public struct Data
 {
-    public string Name;
-    public string Hometown;
+    public string Value { get; set; }
+
+    public Data(string value) : this()
+    {
+        Value = value;
+    }
 }
 
 class PipeServer
 {
+    private static Queue<Data> ServerQueue = new Queue<Data>();
+    private static NamedPipeServerStream pipeServer; // Поле для PipeServer
+
     static void Main()
     {
-        using (NamedPipeServerStream pipeServer = new NamedPipeServerStream("testpipe", PipeDirection.InOut, 1))
+        pipeServer = new NamedPipeServerStream("testpipe", PipeDirection.InOut, 1); // Инициализация
+        Console.WriteLine("NamedPipeServerStream object created.");
+        Console.Write("Waiting for client connection...");
+        pipeServer.WaitForConnection();
+
+        Console.WriteLine("Client connected.");
+
+        Console.WriteLine("Нажмите Home, если хотите начать вводить данные");
+        Console.WriteLine("Нажмите Ctrl+C, если хотите прекратить вводить данные");
+        Console.WriteLine("Введите exit, если хотите завершить программу");
+        Console.CancelKeyPress += CtrlCFunc;
+
+        while (true)
         {
-            Console.WriteLine("NamedPipeServerStream object created.");
-            Console.Write("Waiting for client connection...");
-            pipeServer.WaitForConnection();
+            ConsoleKeyInfo key = Console.ReadKey();
 
-            Console.WriteLine("Client connected.");
-
-            User newUser = new User();
-
-            Console.WriteLine("Enter name: ");
-            newUser.Name = Console.ReadLine();
-
-            Console.WriteLine("Enter hometown: ");
-            newUser.Hometown = Console.ReadLine();
-            
-
-            byte[] userDataBytes = Encoding.UTF8.GetBytes(newUser.Name + "," + newUser.Hometown);
-            pipeServer.Write(userDataBytes, 0, userDataBytes.Length);
-            pipeServer.Flush();
-
-            Console.WriteLine("User data sent to client:");
-            string result = string.Format("Name: {0}, Hometown: {1}", newUser.Name, newUser.Hometown);
-            Console.WriteLine(result);
+            if (key.Key == ConsoleKey.Home)
+            {
+                while (true)
+                {
+                    Console.WriteLine("Добавьте элемент в очередь: ");
+                    string input = Console.ReadLine();
+                    if (input == "exit")
+                    {
+                        Environment.Exit(0);
+                    }
+                    ServerQueue.Enqueue(new Data(input));
+                }
+            }
+            else 
+            {
+                Console.WriteLine("Неверно введённая клавиша");
+            }
         }
+    }
+
+    public static void CtrlCFunc(object sender, ConsoleCancelEventArgs args)
+    {
+        Console.WriteLine("Прерывание добавления данных...");
+        Console.WriteLine("Вывод элементов:");
+        foreach (Data element in ServerQueue)
+        {
+            Console.WriteLine(element.Value);
+        }
+
+        string DataString = "";
+
+        foreach (Data element in ServerQueue)
+        {
+            DataString += element.Value + "\n";
+        }
+
+        byte[] userDataBytes = Encoding.UTF8.GetBytes(DataString);
+        pipeServer.Write(userDataBytes, 0, userDataBytes.Length);
+        pipeServer.Flush();
+
+        Console.WriteLine("User data sent to client!");
+        args.Cancel = true;
+        Environment.Exit(0);
     }
 }

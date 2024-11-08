@@ -1,19 +1,16 @@
-// пока просто копипаст 1 лабы
-
 using System;
+using System.IO;
 using System.IO.Pipes;
 using System.Text;
-
-public struct User
-{
-    public string Name;
-    public string Hometown;
-};
+using System.Windows.Forms;
 
 class PipeClient
 {
+    [STAThread]
     static void Main(string[] args)
     {
+        string path = "file.txt";
+
         using (NamedPipeClientStream pipeClient = new NamedPipeClientStream(".", "testpipe", PipeDirection.InOut))
         {
             Console.Write("Attempting to connect to pipe...");
@@ -25,15 +22,11 @@ class PipeClient
             byte[] userDataBytes = new byte[1024];
             int bytesRead = pipeClient.Read(userDataBytes, 0, userDataBytes.Length);
             string userData = Encoding.UTF8.GetString(userDataBytes, 0, bytesRead);
-
-            string[] userDataParts = userData.Split(',');
-            User receivedUser = new User();
-            receivedUser.Name = userDataParts[0];
-            receivedUser.Hometown = userDataParts[1];
-
+            
+            Clipboard.SetText(userData);
+            File.WriteAllText(path, userData);
             Console.WriteLine("Received from server:");
-            string result = string.Format("Name: {0}\nHometown: {1}", receivedUser.Name, receivedUser.Hometown);
-            Console.WriteLine(result);
+            Console.WriteLine(userData);
         }
     }
 }
